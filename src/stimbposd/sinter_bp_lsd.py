@@ -5,16 +5,17 @@ import numpy as np
 
 import stim
 
-from stimbposd.bp_osd import BPLSD
+from stimbposd.bp_lsd import BPLSD
 from stimbposd.config import (
     DEFAULT_MAX_BP_ITERS,
     DEFAULT_BP_METHOD,
-    DEFAULT_OSD_ORDER,
-    DEFAULT_OSD_METHOD,
+    DEFAULT_LSD_ORDER,
+    DEFAULT_LSD_METHOD,
+    DEFAULT_LSD_SCHEDULE,
 )
 
 
-class SinterCompiledDecoder_BPOSD(CompiledDecoder):
+class SinterCompiledDecoder_BPLSD(CompiledDecoder):
     def __init__(self, decoder: "BPLSD"):
         self.decoder = decoder
 
@@ -35,14 +36,15 @@ class SinterDecoder_BPLSD(Decoder):
         self,
         max_bp_iters: int = DEFAULT_MAX_BP_ITERS,
         bp_method: str = DEFAULT_BP_METHOD,
-        osd_order: int = DEFAULT_OSD_ORDER,
-        osd_method: str = DEFAULT_OSD_METHOD,
-        **bposd_kwargs,
+        lsd_order: int = DEFAULT_LSD_ORDER,
+        lsd_method: str = DEFAULT_LSD_METHOD,
+        schedule: str = DEFAULT_LSD_SCHEDULE,
+        **bplsd_kwargs,
     ):
-        f"""Class for decoding stim circuits with sinter using belief propagation and ordered statistics decoding (BP+OSD).
-        This class uses Joschka Roffe's BP+OSD decoder as a subroutine. For more information on the options and 
-        implementation of the BP+OSD subroutine, see the documentation of the LDPC library: https://roffe.eu/software/ldpc/index.html.
-        Additional keyword arguments are passed to the ``bposd_decoder`` class of the ldpc Python package.
+        f"""Class for decoding stim circuits with sinter using parallel belief propagation and ordered statistics decoding (BP+LSD).
+        This class uses BP+LSD decoder as a subroutine. For more information on the options and 
+        implementation of the BP+LSD subroutine, see the documentation of the LDPC library: https://roffe.eu/software/ldpc/index.html.
+        Additional keyword arguments are passed to the ``bplsd_decoder`` class of the ldpc Python package.
 
         Parameters
         ----------
@@ -53,17 +55,19 @@ class SinterDecoder_BPLSD(Decoder):
         bp_method : str, optional
             The BP method. Currently three methods are implemented: 1) "product_sum": product sum updates;
             2) "min_sum": min-sum updates; 3) "min_sum_log": min-sum log updates, by default {DEFAULT_BP_METHOD}
-        osd_order : int, optional
-            The OSD order, by default {DEFAULT_OSD_ORDER}
-        osd_method : str, optional
-            The OSD method. Currently three methods are available: 1) "osd_0": Zero-oder OSD; 2) "osd_e": 
-            exhaustive OSD; 3) "osd_cs": combination-sweep OSD., by default {DEFAULT_OSD_METHOD}
+        lsd_order : int, optional
+            The LSD order, by default {DEFAULT_LSD_ORDER}
+        lsd_method : str, optional
+            The LSD method. Currently three methods are available: 'LSD_0', 'LSD_E', 'LSD_CS', by default {DEFAULT_LSD_METHOD}
+        schedule : str, optional
+            The LSD schedule, by default {DEFAULT_LSD_SCHEDULE}
         """
         self.max_bp_iters = max_bp_iters
         self.bp_method = bp_method
-        self.osd_order = osd_order
-        self.osd_method = osd_method
-        self.bposd_kwargs = bposd_kwargs
+        self.lsd_order = lsd_order
+        self.lsd_method = lsd_method
+        self.schedule = schedule
+        self.bplsd_kwargs = bplsd_kwargs
 
     def compile_decoder_for_dem(
         self, *, dem: stim.DetectorErrorModel
@@ -72,11 +76,12 @@ class SinterDecoder_BPLSD(Decoder):
             model=dem,
             max_bp_iters=self.max_bp_iters,
             bp_method=self.bp_method,
-            osd_order=self.osd_order,
-            osd_method=self.osd_method,
-            **self.bposd_kwargs,
+            osd_order=self.lsd_order,
+            osd_method=self.lsd_method,
+            schedule=self.schedule,
+            **self.bplsd_kwargs,
         )
-        return SinterCompiledDecoder_BPOSD(bposd)
+        return SinterCompiledDecoder_BPLSD(bposd)
 
     def decode_via_files(
         self,
@@ -123,9 +128,10 @@ class SinterDecoder_BPLSD(Decoder):
             model=dem,
             max_bp_iters=self.max_bp_iters,
             bp_method=self.bp_method,
-            osd_order=self.osd_order,
-            osd_method=self.osd_method,
-            **self.bposd_kwargs,
+            lsd_order=self.lsd_order,
+            lsd_method=self.lsd_method,
+            schedule=self.schedule,
+            **self.bplsd_kwargs,
         )
         shots = stim.read_shot_data_file(
             path=dets_b8_in_path,

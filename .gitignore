@@ -6,3 +6,6 @@ coverage.xml
 .coverage
 __pycache__
 tests/gen_test_data.py
+.venv/
+uv.lock
+.pytest_cache/

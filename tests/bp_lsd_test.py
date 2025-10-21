@@ -50,9 +50,9 @@ def test_sinter_decode_repetition_code(force_streaming: Optional[bool]):
         dem_obj=circuit.detector_error_model(decompose_errors=True),
         dem_path=None,
         num_shots=1000,
-        decoder="bposd",
+        decoder="bplsd",
         __private__unstable__force_decode_on_disk=force_streaming,
-        custom_decoders={"bposd": SinterDecoder_BPLSD()},
+        custom_decoders={"bplsd": SinterDecoder_BPLSD()},
     )
     assert 1 <= result.errors <= 100
     assert result.shots == 1000

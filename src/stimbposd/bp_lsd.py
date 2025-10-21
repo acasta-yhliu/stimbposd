@@ -2,15 +2,15 @@ import numpy as np
 from stimbposd.dem_to_matrices import detector_error_model_to_check_matrices
 
 try:
-    from ldpc.bposd_decoder import BpOsdDecoder
+    from ldpc.bplsd_decoder import BpLsdDecoder
 
     def create_decoder(pcm, priors, **kwargs):
-        return BpOsdDecoder(pcm=pcm, error_channel=list(priors), **kwargs)
+        return BpLsdDecoder(pcm=pcm, error_channel=list(priors), **kwargs)
 except ImportError:
-    from ldpc.osd import bposd_decoder
+    from ldpc.lsd import bplsd_decoder
 
     def create_decoder(pcm, priors, **kwargs):
-        return bposd_decoder(parity_check_matrix=pcm, channel_probs=priors, **kwargs)
+        return bplsd_decoder(parity_check_matrix=pcm, channel_probs=priors, **kwargs)
 
 
 import stim
@@ -18,8 +18,9 @@ import stim
 from stimbposd.config import (
     DEFAULT_MAX_BP_ITERS,
     DEFAULT_BP_METHOD,
-    DEFAULT_OSD_ORDER,
-    DEFAULT_OSD_METHOD,
+    DEFAULT_LSD_ORDER,
+    DEFAULT_LSD_METHOD,
+    DEFAULT_LSD_SCHEDULE,
 )
 
 
@@ -29,14 +30,15 @@ class BPLSD:
         model: stim.DetectorErrorModel,
         max_bp_iters: int = DEFAULT_MAX_BP_ITERS,
         bp_method: str = DEFAULT_BP_METHOD,
-        osd_order: int = DEFAULT_OSD_ORDER,
-        osd_method: str = DEFAULT_OSD_METHOD,
-        **bposd_kwargs,
+        lsd_order: int = DEFAULT_LSD_ORDER,
+        lsd_method: str = DEFAULT_LSD_METHOD,
+        schedule: str = DEFAULT_LSD_SCHEDULE,
+        **bplsd_kwargs,
     ):
-        f"""Class for decoding stim circuits using belief propagation and ordered statistics decoding (BP+OSD).
-        This class uses Joschka Roffe's BP+OSD decoder as a subroutine. For more information on the options and 
+        f"""Class for decoding stim circuits using parallel belief propagation and ordered statistics decoding (BP+LSD).
+        This class uses BP+LSD decoder as a subroutine. For more information on the options and 
         implementation of the BP+OSD subroutine, see the documentation of the LDPC library: https://roffe.eu/software/ldpc/index.html.
-        Additional keyword arguments are passed to the ``bposd_decoder`` class of the ldpc Python package.
+        Additional keyword arguments are passed to the ``bplsd_decoder`` class of the ldpc Python package.
 
         Parameters
         ----------
@@ -47,11 +49,12 @@ class BPLSD:
         bp_method : str, optional
             The BP method. Currently three methods are implemented: 1) "product_sum": product sum updates;
             2) "min_sum": min-sum updates; 3) "min_sum_log": min-sum log updates, by default {DEFAULT_BP_METHOD}
-        osd_order : int, optional
-            The OSD order, by default {DEFAULT_OSD_ORDER}
-        osd_method : str, optional
-            The OSD method. Currently three methods are available: 1) "osd_0": Zero-oder OSD; 2) "osd_e": 
-            exhaustive OSD; 3) "osd_cs": combination-sweep OSD., by default {DEFAULT_OSD_METHOD}
+        lsd_order : int, optional
+            The LSD order, by default {DEFAULT_LSD_ORDER}
+        lsd_method : str, optional
+            The LSD method. Currently three methods are available: 'LSD_0', 'LSD_E', 'LSD_CS', by default {DEFAULT_LSD_METHOD}
+        schedule : str, optional
+            The LSD schedule, by default {DEFAULT_LSD_SCHEDULE}
         """
         self._matrices = detector_error_model_to_check_matrices(
             model, allow_undecomposed_hyperedges=True
@@ -59,16 +62,17 @@ class BPLSD:
         self.num_detectors = model.num_detectors
         self.num_errors = model.num_errors
         h_shape = self._matrices.check_matrix.shape
-        max_osd_order = h_shape[1] - h_shape[0]
-        self._bposd = create_decoder(
+        max_lsd_order = h_shape[1] - h_shape[0]
+        self._bplsd = create_decoder(
             pcm=self._matrices.check_matrix,
             max_iter=max_bp_iters,
             bp_method=bp_method,
             priors=self._matrices.priors,
-            osd_order=min(osd_order, max_osd_order),
-            osd_method=osd_method,
+            lsd_order=min(lsd_order, max_lsd_order),
+            lsd_method=lsd_method,
+            schedule=schedule,
             input_vector_type="syndrome",
-            **bposd_kwargs,
+            **bplsd_kwargs,
         )
 
     def decode(self, syndrome: np.ndarray) -> np.ndarray:
@@ -89,7 +93,7 @@ class BPLSD:
             Its length is equal to the number of observables in the `stim.Circuit` or `stim.DetectorErrorModel`.
             `predictions[i]` is 1 if the decoder predicts observable `i` was flipped and 0 otherwise.
         """
-        corr = self._bposd.decode(syndrome)
+        corr = self._bplsd.decode(syndrome)
         return (self._matrices.observables_matrix @ corr) % 2
 
     def decode_batch(
