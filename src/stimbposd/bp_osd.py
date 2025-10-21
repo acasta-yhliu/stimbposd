@@ -23,7 +23,7 @@ from stimbposd.config import (
 )
 
 
-class BPLSD:
+class BPOSD:
     def __init__(
         self,
         model: stim.DetectorErrorModel,

@@ -6,7 +6,7 @@ import numpy as np
 import stim
 from sinter._decoding import sample_decode
 
-from stimbposd import BPLSD, SinterDecoder_BPLSD, sinter_decoders
+from stimbposd import BPOSD, SinterDecoder_BPOSD, sinter_decoders
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -20,7 +20,7 @@ def test_bposd_on_bivariate_bicycle_circuits(
 ):
     circuit = stim.Circuit.from_file(TEST_DATA_DIR / (filename + ".stim"))
     dem = stim.DetectorErrorModel.from_file(TEST_DATA_DIR / (filename + ".dem"))
-    bposd = BPLSD(dem, osd_order=5)
+    bposd = BPOSD(dem, osd_order=5)
     num_dets = circuit.num_detectors
     shot_data = stim.read_shot_data_file(
         path=TEST_DATA_DIR / (filename + ".b8"),
@@ -52,7 +52,7 @@ def test_sinter_decode_repetition_code(force_streaming: Optional[bool]):
         num_shots=1000,
         decoder="bposd",
         __private__unstable__force_decode_on_disk=force_streaming,
-        custom_decoders={"bposd": SinterDecoder_BPLSD()},
+        custom_decoders={"bposd": SinterDecoder_BPOSD()},
     )
     assert 1 <= result.errors <= 100
     assert result.shots == 1000

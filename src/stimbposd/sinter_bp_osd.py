@@ -5,7 +5,7 @@ import numpy as np
 
 import stim
 
-from stimbposd.bp_osd import BPLSD
+from stimbposd.bp_osd import BPOSD
 from stimbposd.config import (
     DEFAULT_MAX_BP_ITERS,
     DEFAULT_BP_METHOD,
@@ -15,7 +15,7 @@ from stimbposd.config import (
 
 
 class SinterCompiledDecoder_BPOSD(CompiledDecoder):
-    def __init__(self, decoder: "BPLSD"):
+    def __init__(self, decoder: "BPOSD"):
         self.decoder = decoder
 
     def decode_shots_bit_packed(
@@ -30,7 +30,7 @@ class SinterCompiledDecoder_BPOSD(CompiledDecoder):
         )
 
 
-class SinterDecoder_BPLSD(Decoder):
+class SinterDecoder_BPOSD(Decoder):
     def __init__(
         self,
         max_bp_iters: int = DEFAULT_MAX_BP_ITERS,
@@ -68,7 +68,7 @@ class SinterDecoder_BPLSD(Decoder):
     def compile_decoder_for_dem(
         self, *, dem: stim.DetectorErrorModel
     ) -> CompiledDecoder:
-        bposd = BPLSD(
+        bposd = BPOSD(
             model=dem,
             max_bp_iters=self.max_bp_iters,
             bp_method=self.bp_method,
@@ -119,7 +119,7 @@ class SinterDecoder_BPLSD(Decoder):
                 via sinter deleting this directory after killing the decoder.
         """
         dem = stim.DetectorErrorModel.from_file(dem_path)
-        bposd = BPLSD(
+        bposd = BPOSD(
             model=dem,
             max_bp_iters=self.max_bp_iters,
             bp_method=self.bp_method,
